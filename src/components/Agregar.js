@@ -1,54 +1,81 @@
-import { View, Text, TextInput, Touchable, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import { View, Text, TextInput, TouchableOpacity } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { db } from '../../firebaseConfig';
+import { addDoc, collection } from 'firebase/firestore';
+import uuid from 'react-native-uuid';
+import { useContexData } from '../Context/Context';
 
-export default function Agregar(props) {
+export default function Agregar() {
+
+    const { gastoAct,handlerActualizarGasto } = useContexData();
+
+    useEffect(() => {
+        setGasto(gastoAct)
+    }, [gastoAct])
+
     const [gasto, setGasto] = useState({
         nombre: "",
         valor: ""
     })
 
     const AgregarNombre = (e) => {
-      setGasto({...gasto, nombre: e})
+        setGasto({ ...gasto, nombre: e })
     }
 
     const AgregarValor = (e) => {
-        setGasto({...gasto, valor: e})
-      }
+        setGasto({ ...gasto, valor: e })
+    }
 
-      const AgregarGasto = (gasto) => {
+    const AgregarGasto = async (gasto) => {
+        try {
+            await addDoc(collection(db, "gastos"), {
+                id: uuid.v4(),
+                nombre: gasto.nombre,
+                valor: gasto.valor
+            });
+            console.log("se ha guardado el gasto")
+            setGasto({
+                nombre: "",
+                valor: ""
+            })
+        } catch (error) {
+            console.error("Error al crear el registro:", error);
+        }
 
-        props.Agregar(gasto)
-        console.log("se ha guardado el gasto")
-        setGasto({
-            nombre: "",
-            valor: ""
-        })
-      }
-      
-    
+    }
+
+
     return (
-        <View className='pb-4 mt-10'>
-            <Text className='text-3xl font-bold text-center'>Añade tus gastos</Text>
-            <TextInput className='border-2 mr-4 ml-4 mt-2 p-2 border-gray-500 rounded-md' 
-            placeholder='  Nombre Gasto Ej: Transporte' 
-            onChangeText={AgregarNombre}
-            value={gasto.nombre}
+        <View className='pb-4 mt-6'>
+            <Text className='text-3xl font-bold text-white text-center'>Añade tus gastos</Text>
+            <TextInput className=' mr-4 ml-4 mt-4 p-2  rounded-md  h-10 bg-white border border-gray-300 '
+                placeholder='  Nombre Gasto Ej: Transporte'
+                onChangeText={AgregarNombre}
+                value={gasto.nombre}
             />
 
-            <TextInput keyboardType='numeric' className='border-2 mr-4 ml-4 mt-3 p-2 border-gray-500 rounded-md'
-             placeholder='  Cantidad Gastos Ej: 100'
-             onChangeText={AgregarValor}
-             value={gasto.valor}
-             />
-        
-            <TouchableOpacity className='flex bg-pink-600 items-center m-4 p-2 rounded-md'
-            onPress={()=> {
-                console.log(gasto)
-                AgregarGasto(gasto)
-            }}
-            >
-                <Text className='text-white font-bold text-sm'>Agregar</Text>
-            </TouchableOpacity>
+            <TextInput keyboardType='numeric' className='mr-4 ml-4 mt-4 p-2 mb-4 rounded-md  h-10 bg-white border border-gray-300 '
+                placeholder='  Cantidad Gastos Ej: 100'
+                onChangeText={AgregarValor}
+                value={gasto.valor}
+            />
+            {gasto.id ?
+                <TouchableOpacity className='flex  bg-white items-center m-4 p-2 rounded-md'
+                    onPress={() => {
+                        handlerActualizarGasto(gasto)
+                    }}
+                >
+                    <Text className='text-sky-600 font-bold text-sm'>Actualizar</Text>
+                </TouchableOpacity>
+                :
+                <TouchableOpacity className='flex bg-white items-center m-4 p-2 rounded-md'
+                    onPress={() => {
+                        AgregarGasto(gasto)
+                    }}
+                >
+                    <Text className='text-sky-600 font-bold text-sm'>Agregar</Text>
+                </TouchableOpacity>
+            }
         </View>
     )
 }
