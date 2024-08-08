@@ -1,44 +1,70 @@
-import { View, Text, ScrollView, Image } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import Agregar from '../components/Agregar';
-import Lista from '../components/Lista';
-import Barra from '../components/Barra';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { StatusBar } from 'expo-status-bar';
+import { useUser } from '@clerk/clerk-expo';
+import { Link } from '@react-navigation/native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Header from '../components/Header';
+import Graphic from '../components/Graphic';
+import Lista from '../components/Lista';
+
+const obtenerCategoria = (user, setCategorias) => {
+    const q = query(collection(db, 'categoria'), where("create_by", "==", user.id));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const categoriasData = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            data.id = doc.id; // Añade el ID del documento a los datos
+            categoriasData.push(data);
+        });
+        setCategorias(categoriasData);
+    }, (error) => {
+        console.error('Error al obtener las categorías: ', error);
+    });
+
+    return unsubscribe;
+};
 
 export default function Gasto() {
-
-    const [gastos, setGastos] = useState([]);
+    const [categorias, setCategorias] = useState([]);
+    const { user } = useUser();
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
-        const q = collection(db, 'gastos');
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const gastosData = [];
-            querySnapshot.forEach((doc) => {
-                gastosData.push(doc.data());
-            });
-            setGastos(gastosData)
-        });
+        if (!user) return;
+
+        const unsubscribe = obtenerCategoria(user, setCategorias);
 
         return () => {
             unsubscribe();
         };
-    }, []);
+    }, [user]);
 
-    const valorTotal = gastos.reduce((total, gasto) => total + parseInt(gasto.valor, 10), 0)
+    const onRefresh = () => {
+        setRefreshing(true);
+        obtenerCategoria(user, setCategorias);
+        setRefreshing(false);
+    };
+
     return (
-        <View className="bg-white h-full w-full">
-            <StatusBar style='light' />
-            <Image className='h-full w-full absolute' source={require('../../assets/background.png')} />
-            <View className='flex-1 flex-col justify-between'>
-                <Agregar />
-                <Text className='font-bold text-3xl ml-4 text-white text-center'>Lista gastos </Text>
-                <ScrollView>
-                    <Lista gastos={gastos} />
-                </ScrollView>
-                <Barra sumatoria={valorTotal} />
+        <View className='flex-1 mt-5'>
+            <View className="p-5 bg-slate-950 h-60">
+                <Header />
+            </View>
+            <View className='p-6 -mt-48 flex-1'>
+                <Graphic />
+                <Lista
+                    categorias={categorias}
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                />
+            </View>
+            <View className='absolute bottom-5 right-5'>
+                <Link to={{ screen: 'AgregarCategoria' }}>
+                    <MaterialIcons name="add-circle" size={48} color="black" />
+                </Link>
             </View>
         </View>
-    )
+    );
 }

@@ -1,11 +1,12 @@
 import { collection, deleteDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { createContext, useContext, useState } from "react";
 import { db } from "../../firebaseConfig";
+import { useUser } from "@clerk/clerk-expo";
 
 const Context = createContext();
 
 export const CreateProvider = ({ children }) => {
-
+    const {user} = useUser()
     const [gastoAct, setGastoAct] = useState({})
   
     
@@ -18,7 +19,7 @@ export const CreateProvider = ({ children }) => {
                 const data = doc.data();
                 setGastoAct(data)
             });
-            console.log(gastoAct)
+            
         } catch (error) {
             console.log('error al conseguir el gasto', error)
         }
@@ -53,6 +54,21 @@ export const CreateProvider = ({ children }) => {
         }
     }
 
+    const ObtenerCategory = async () => {
+        try {
+            const querySnapshot = await getDocs(query(collection(db, 'categoria'), where('create_by', '==', user.id)));
+            const categorias = [];
+            querySnapshot.forEach((doc) => {
+
+                const data = doc.data();
+                categorias.push(data)
+            });
+            
+            return categorias
+        } catch (error) {
+            console.log('error al conseguir el gasto', error)
+        }
+    }
     
     
 
@@ -62,7 +78,8 @@ export const CreateProvider = ({ children }) => {
                 ObtenerGasto,
                 gastoAct,
                 handlerDelete,
-                handlerActualizarGasto
+                handlerActualizarGasto,
+                ObtenerCategory
             }}
         >
             {children}

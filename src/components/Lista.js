@@ -1,49 +1,62 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import React from 'react'
-import { AntDesign } from '@expo/vector-icons';
-import { Entypo } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, RefreshControl } from 'react-native';
+import React from 'react';
+import { SwipeListView } from 'react-native-swipe-list-view';
 import { useContexData } from '../Context/Context';
+import { formatCurrency } from '../utils';
 
-
-
-export default function Lista(props) {
-
+export default function Lista({ categorias, refreshing, onRefresh }) {
     const { ObtenerGasto, handlerDelete } = useContexData();
 
-  
-
     return (
-        <View className='mt-4'>
-            {props.gastos && props.gastos.length > 0 ? (
-                props.gastos.map((gasto) => (
-
-                    <View key={gasto.id} className='border-gray-700 border-2 mx-4  flex-row justify-between items-center'>
-                        <Text className='mx-2 p-3 flex-1'>
-                            {gasto.nombre}
-                        </Text>
-                        <Text className='mx-2 p-3 flex-1'>
-                            {gasto.valor}
-                        </Text>
-                        <TouchableOpacity className='flex bg-red-600 items-center m-4 p-2 rounded-3xl '
-                            onPress={() => handlerDelete(gasto.id)}
-                        >
-                            <AntDesign name="delete" size={24} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity className='flex bg-sky-600 items-center m-4 p-2 rounded-3xl '
-                            onPress={() => ObtenerGasto(gasto.id)}
-                        >
-                            <Entypo name="edit" size={24} color="white" />
-                        </TouchableOpacity>
-                    </View>
-
-                ))
+        <View className='flex-1  mt-4'>
+            {categorias && categorias.length > 0 ? (
+                <SwipeListView
+                    data={categorias}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item: categoria }) => (
+                        <View key={categoria.id} className='bg-white mx-4 rounded-lg mb-3 p-4'>
+                            <View className='flex-row gap-5 items-center'>
+                                <View className='p-3 rounded-xl' style={{ backgroundColor: categoria.color }}>
+                                    <Text className='text-2xl flex items-center'>{categoria.icon}</Text>
+                                </View>
+                                <View className='flex-row justify-between items-center w-[70%]'>
+                                    <View>
+                                        <Text className="font-bold text-xl">{categoria.name}</Text>
+                                        <Text>0 items</Text>
+                                    </View>
+                                    <Text className='font-semibold text-base'>{formatCurrency(categoria.assigned_budget)}</Text>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+                    renderHiddenItem={({ item }) => (
+                        <View className='flex-row justify-end bg-red-600 rounded-lg mb-3 mx-4'>
+                            <TouchableOpacity
+                                className='p-8'
+                                onPress={() => handlerDelete(item.id)}
+                            >
+                                <Text className='text-white'>Delete</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                    rightOpenValue={-85}
+                    stopRightSwipe={-75}
+                    disableRightSwipe
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                        />
+                    }
+                    showsVerticalScrollIndicator={false}
+                />
             ) : (
-                <View className='border-gray-700 border-2 mx-4  '>
+                <View className='border-gray-700 border-2 mx-4'>
                     <Text className='mx-2 p-3 text-center'>
                         Tienes que agregar un nuevo gasto
                     </Text>
                 </View>
             )}
         </View>
-    )
+    );
 }

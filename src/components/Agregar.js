@@ -4,9 +4,12 @@ import { db } from '../../firebaseConfig';
 import { addDoc, collection } from 'firebase/firestore';
 import uuid from 'react-native-uuid';
 import { useContexData } from '../Context/Context';
+import { useUser } from '@clerk/clerk-expo';
 
 export default function Agregar() {
 
+    const {user} = useUser()
+    
     const { gastoAct,handlerActualizarGasto } = useContexData();
 
     useEffect(() => {
@@ -30,10 +33,11 @@ export default function Agregar() {
         try {
             await addDoc(collection(db, "gastos"), {
                 id: uuid.v4(),
+                key: user.id,
                 nombre: gasto.nombre,
-                valor: gasto.valor
+                valor: gasto.valor,
             });
-            console.log("se ha guardado el gasto")
+            
             setGasto({
                 nombre: "",
                 valor: ""
@@ -47,7 +51,7 @@ export default function Agregar() {
 
     return (
         <View className='pb-4 mt-6'>
-            <Text className='text-3xl font-bold text-white text-center'>Añade tus gastos</Text>
+            <Text className='text-3xl font-bold text-white text-center'>Añade tus gasto {user?.firstName} </Text>
             <TextInput className=' mr-4 ml-4 mt-4 p-2  rounded-md  h-10 bg-white border border-gray-300 '
                 placeholder='  Nombre Gasto Ej: Transporte'
                 onChangeText={AgregarNombre}
